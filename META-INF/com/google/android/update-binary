@@ -13,6 +13,8 @@ ui_print() {
   done;
 }
 show_progress() { echo "progress $1 $2" > $OUTFD; }
+## Acsii Art/Text has a Max width of 53 chars ##
+##       "12345678901234567890123456789012345678901234567890123"; Max Width##
 file_getprop() { grep "^$2=" "$1" | cut -d= -f2; }
 if [ ! "$(getprop 2>/dev/null)" ]; then
   getprop() {
@@ -105,6 +107,8 @@ if [ "$(file_getprop /tmp/anykernel/anykernel.sh do.devicecheck)" == 1 ]; then
   done;
   ui_print " ";
   if [ "$match" != 1 ]; then
+    ui_print "Your Device: $testname is not supported."
+    ui_print "Report to Author that your device is a $testname ..."
     abort "Unsupported device. Aborting...";
   fi;
 fi;
@@ -163,6 +167,8 @@ fi;
 debugging;
 
 if [ "$(file_getprop /tmp/anykernel/anykernel.sh do.cleanup)" == 1 ]; then
+    ui_print " ";
+    ui_print "[Nebula] Cleaning up...";
   cleanup;
 fi;
 
@@ -172,5 +178,22 @@ test "$savedpre" && export LD_PRELOAD="$savedpre";
 unmount_all;
 
 ui_print " ";
+## Acsii Art/Text has a Max width of 53 chars ##
+##       "12345678901234567890123456789012345678901234567890123"; Max Width##
+ui_print "                                                     ";
+ui_print "              ___MMM___           |||                ";
+ui_print " _____          (0-0)            (o o)         _____ ";
+ui_print "( ___ )-----oOO--(_)--OOo----ooO--\ /--Ooo----( ___ )";
+ui_print " |   |                                         |   | ";
+ui_print " | / |            NebulaKernel                 | \ | ";
+ui_print " | / |            Ver: 1.0.0                   | \ | ";
+ui_print " | / |                                         | \ | ";
+ui_print " | / |    Device:  OnePlus 6/6T                 | \ | ";
+ui_print " | / |                                         | \ | ";
+ui_print " | / |   Developed By,                         | \ | ";
+ui_print " | / |                XDA: Eliminater74        | \ | ";
+ui_print " |___|  E-mail: eliminater74@purefusionos.com  |___| ";
+ui_print "(_____)---------------------------------------(_____)";
+ui_print "                                                     ";
 ui_print " ";
 ui_print "Done!";

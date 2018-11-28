@@ -1,0 +1,9 @@
+*proprietary*
+*nebula-changelog.sh*
+*Changelog*
+*zipexclude.lst*
+*placeholder*
+*zipexclude*
+*.git*
+*README*
+*.bak*

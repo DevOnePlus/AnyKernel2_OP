@@ -1,4 +1,6 @@
 ## AnyKernel methods (DO NOT CHANGE)
+# osm0sis @ xda-developers
+
 # set up extracted files and directories
 ramdisk=/tmp/anykernel/ramdisk;
 bin=/tmp/anykernel/tools;
@@ -18,7 +20,7 @@ ui_print() { echo -e "ui_print $1\nui_print" > $OUTFD; }
 contains() { test "${1#*$2}" != "$1" && return 0 || return 1; }
 
 # file_getprop <file> <property>
-file_getprop() { grep "^$2=" "$1" | cut -d= -f2; }
+file_getprop() { grep "^$2=" "$1" | cut -d= -f2-; }
 
 # reset anykernel directory
 reset_ak() {
@@ -111,13 +113,19 @@ unpack_ramdisk() {
     '   B   Z   h'*) compext="bz2"; unpackcmd="bzip2";;
     ' stx   !   L can') compext="lz4-l"; unpackcmd="$bin/lz4";;
     ' etx   !   L can'|' eot   "   M can') compext="lz4"; unpackcmd="$bin/lz4";;
+    '   0   7   0   7') compext=""; unpackcmd="cat";;
+    '') ui_print " "; ui_print "Ramdisk not found in image. Aborting..."; exit 1;;
     *) ui_print " "; ui_print "Unknown ramdisk compression. Aborting..."; exit 1;;
   esac;
-  mv -f $split_img/boot.img-ramdisk.gz $split_img/boot.img-ramdisk.cpio.$compext;
+  if [ "$compext" ]; then
+    compext=.$compext;
+    unpackcmd="$unpackcmd -dc";
+  fi;
+  mv -f $split_img/boot.img-ramdisk.gz $split_img/boot.img-ramdisk.cpio$compext;
   mkdir -p $ramdisk;
   chmod 755 $ramdisk;
   cd $ramdisk;
-  $unpackcmd -dc $split_img/boot.img-ramdisk.cpio.$compext | EXTRACT_UNSAFE_SYMLINKS=1 cpio -i -d;
+  $unpackcmd $split_img/boot.img-ramdisk.cpio$compext | EXTRACT_UNSAFE_SYMLINKS=1 cpio -i -d;
   if [ $? != 0 -o -z "$(ls $ramdisk)" ]; then
     ui_print " "; ui_print "Unpacking ramdisk failed. Aborting..."; exit 1;
   fi;
@@ -132,7 +140,8 @@ dump_boot() {
 repack_ramdisk() {
   local compext repackcmd;
   case $ramdisk_compression in
-    auto|"") compext=`echo $split_img/*-ramdisk.cpio.* | rev | cut -d. -f1 | rev`;;
+    auto|"") compext=`echo $split_img/*-ramdisk.cpio* | rev | cut -d. -f1 | rev`; test "$compext" == "cpio" && compext="";;
+    none|cpio) compext="";;
     *) compext=$ramdisk_compression;;
   esac;
   case $compext in
@@ -143,20 +152,25 @@ repack_ramdisk() {
     bz2) repackcmd="bzip2";;
     lz4-l) repackcmd="$bin/lz4 -l";;
     lz4) repackcmd="$bin/lz4";;
+    "") repackcmd="cat";;
   esac;
+  if [ "$compext" ]; then
+    compext=.$compext;
+    repackcmd="$repackcmd -9c";
+  fi;
   if [ -f "$bin/mkbootfs" ]; then
-    $bin/mkbootfs $ramdisk | $repackcmd -9c > /tmp/anykernel/ramdisk-new.cpio.$compext;
+    $bin/mkbootfs $ramdisk | $repackcmd > /tmp/anykernel/ramdisk-new.cpio$compext;
   else
     cd $ramdisk;
-    find . | cpio -H newc -o | $repackcmd -9c > /tmp/anykernel/ramdisk-new.cpio.$compext;
+    find . | cpio -H newc -o | $repackcmd > /tmp/anykernel/ramdisk-new.cpio$compext;
   fi;
   if [ $? != 0 ]; then
     ui_print " "; ui_print "Repacking ramdisk failed. Aborting..."; exit 1;
   fi;
   cd /tmp/anykernel;
   if [ -f "$bin/mkmtkhdr" ]; then
-    $bin/mkmtkhdr --rootfs ramdisk-new.cpio.$compext;
-    mv -f ramdisk-new.cpio.$compext-mtk ramdisk-new.cpio.$compext;
+    $bin/mkmtkhdr --rootfs ramdisk-new.cpio$compext;
+    mv -f ramdisk-new.cpio$compext-mtk ramdisk-new.cpio$compext;
   fi;
 }
 flash_dtbo() {
@@ -245,8 +259,8 @@ flash_boot() {
     kernel=`ls *-zImage`;
     kernel=$split_img/$kernel;
   fi;
-  if [ -f /tmp/anykernel/ramdisk-new.cpio.* ]; then
-    rd=`echo /tmp/anykernel/ramdisk-new.cpio.*`;
+  if [ -f /tmp/anykernel/ramdisk-new.cpio* ]; then
+    rd=`echo /tmp/anykernel/ramdisk-new.cpio*`;
   else
     rd=`ls *-ramdisk.*`;
     rd="$split_img/$rd";
@@ -355,10 +369,11 @@ backup_file() { test ! -f $1~ && cp $1 $1~; }
 # restore_file <file>
 restore_file() { test -f $1~ && mv -f $1~ $1; }
 
-# replace_string <file> <if search string> <original string> <replacement string>
+# replace_string <file> <if search string> <original string> <replacement string> <scope>
 replace_string() {
+  test "$5" == "global" && local scope=g;
   if [ -z "$(grep "$2" $1)" ]; then
-    sed -i "s;${3};${4};" $1;
+    sed -i "s;${3};${4};${scope}" $1;
   fi;
 }
 

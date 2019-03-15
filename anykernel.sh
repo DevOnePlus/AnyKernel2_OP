@@ -50,7 +50,36 @@ if [ -d $ramdisk/.subackup -o -d $ramdisk/.backup ]; then
   ui_print " "; ui_print "Magisk detected! Patching cmdline so reflashing Magisk is not necessary...";
   patch_cmdline "skip_override" "skip_override";
 else
+  ui_print " "; ui_print "Magisk NOT DETECTED: Please Install Magisk to gain full use of kernel..";
   patch_cmdline "skip_override" "";
+fi;
+
+# detect OS edition
+userflavor="$(grep "^ro.build.user" /system/build.prop | cut -d= -f2):$(grep "^ro.build.flavor" /system/build.prop | cut -d= -f2)";
+case "$userflavor" in
+  "OnePlus:OnePlus6T-user")
+    os="oos";
+    os_string="OxygenOS"
+    ;;
+  "OnePlus:OnePlus6-user")
+    os="oos";
+    os_string="OxygenOS"
+    ;;
+  "OnePlus:OnePlus6TSingle-user")
+    os="oos";
+    os_string="OxygenOS"
+    ;;
+  *)
+    os="custom";
+    os_string="a custom ROM"
+    ;;
+esac;
+
+# Tell user what was detected and what works and or not works
+if [ "$os_string" = "a custom ROM" ]; then
+   ui_print " "; ui_print "-> $os_string detected, Most things will work, But Some things Wont, But we are working on that..";
+   else
+   ui_print " "; ui_print "-> $os_string detected, Everything should work on Stock..";
 fi;
 
 # Clean up Other Kernels Overlays that could conflict with ours:

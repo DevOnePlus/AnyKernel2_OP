@@ -264,7 +264,7 @@ ui_print " _____          (0-0)            (o o)         _____ ";
 ui_print "( ___ )-----oOO--(_)--OOo----ooO--\ /--Ooo----( ___ )";
 ui_print " |   |                                         |   | ";
 ui_print " | / |            NebulaKernel                 | \ | ";
-ui_print " | / |            Ver: x.x.x                   | \ | ";
+ui_print " | / |            Ver: 19.0.3                  | \ | ";
 ui_print " | / |                                         | \ | ";
 ui_print " | / |    Device:  OnePlus 6/6T                | \ | ";
 ui_print " | / |                                         | \ | ";

@@ -87,7 +87,7 @@ abort() {
   exit 1;
 }
 
-show_progress 1.34 4;
+show_progress 1.34 25;
 ui_print " ";
 cleanup;
 mkdir -p /tmp/anykernel/bin;
@@ -152,7 +152,7 @@ elif [ ! "$(getprop ro.product.device 2>/dev/null)" -a ! "$(getprop ro.build.pro
 fi;
 
 if [ "$(file_getprop anykernel.sh do.devicecheck)" == 1 ]; then
-  ui_print "Checking device...";
+  ui_print "  • Checking device";
   device="$(getprop ro.product.device)";
   product="$(getprop ro.build.product)";
   for testname in $(file_getprop anykernel.sh 'device.name.*'); do
@@ -172,7 +172,7 @@ fi;
 
 supported_ver="$(file_getprop anykernel.sh supported.versions | $bb tr -d '[:space:]')";
 if [ "$supported_ver" ]; then
-  ui_print "Checking Android version...";
+  ui_print "  • Checking Android version";
   android_ver="$(file_getprop /system/build.prop ro.build.version.release)";
   if [ "$(echo $supported_ver | $bb grep -)" ]; then
     lo_ver=$(echo $supported_ver | $bb cut -d- -f1);
@@ -193,11 +193,12 @@ if [ "$supported_ver" ]; then
     ui_print " ";
   else
     ui_print " ";
+    ui_print " "; ui_print "You are on $android_ver but this kernel is only for $supported_version!";
     abort "Unsupported Android version. Aborting...";
   fi;
 fi;
 
-ui_print "Installing...";
+ui_print "* Installing...";
 for i in $($bb --list); do
   $bb ln -s $bb bin/$i;
 done;
@@ -246,32 +247,24 @@ debugging;
 
 if [ "$(file_getprop anykernel.sh do.cleanup)" == 1 ]; then
     ui_print " ";
-    ui_print "[Nebula] Cleaning up...";
+    ui_print "* [Nebula] Cleaning up...";
   cleanup;
 fi;
 
 test "$savedpath" && export LD_LIBRARY_PATH="$savedpath";
 test "$savedpre" && export LD_PRELOAD="$savedpre";
 
+if [ -f closing_banner ]; then
+  while IFS='' read -r line || $bb [[ -n "$line" ]]; do
+    ui_print "$line";
+  done < closing_banner;
+  ui_print " ";
+  ui_print " ";
+fi;
+
 unmount_all;
 
 ui_print " ";
 ## Acsii Art/Text has a Max width of 53 chars ##
 ##       "12345678901234567890123456789012345678901234567890123"; Max Width##
-ui_print "                                                     ";
-ui_print "              ___MMM___           |||                ";
-ui_print " _____          (0-0)            (o o)         _____ ";
-ui_print "( ___ )-----oOO--(_)--OOo----ooO--\ /--Ooo----( ___ )";
-ui_print " |   |                                         |   | ";
-ui_print " | / |            NebulaKernel                 | \ | ";
-ui_print " | / |            Ver: 19.0.3                  | \ | ";
-ui_print " | / |                                         | \ | ";
-ui_print " | / |    Device:  OnePlus 6/6T                | \ | ";
-ui_print " | / |                                         | \ | ";
-ui_print " | / |   Developed By,                         | \ | ";
-ui_print " | / |                XDA: Eliminater74        | \ | ";
-ui_print " |___|  E-mail: eliminater74@purefusionos.com  |___| ";
-ui_print "(_____)---------------------------------------(_____)";
-ui_print "                                                     ";
-ui_print " ";
-ui_print "Done!";
+ui_print "  • Done!";

@@ -14,7 +14,7 @@ device.name2=OnePlus6T
 device.name3=OnePlus6TSingle
 device.name4=
 device.name5=
-supported.versions=
+supported.versions=9
 '; } # end properties
 
 # shell variables
@@ -43,16 +43,30 @@ chown -R root:root $ramdisk/*;
 
 
 ## AnyKernel install
+ui_print "  • Unpacking image"
 dump_boot;
+
+# Clean up Other Kernels Overlays that could conflict with ours:
+if [ "$(ls -A $ramdisk/overlay)" ]; then
+   ui_print " "; ui_print "-> Detected $ramdisk/overlay Not Empty, Removing Leftovers.. ";
+   rm -rf $ramdisk/overlay;
+else
+   ui_print " "; ui_print "-> Detected $ramdisk/overlay is Empty..";
+fi
 
 # Add skip_override parameter to cmdline so user doesn't have to reflash Magisk
 if [ -d $ramdisk/.subackup -o -d $ramdisk/.backup ]; then
-  ui_print " "; ui_print "Magisk detected! Patching cmdline so reflashing Magisk is not necessary...";
+  ui_print " "; ui_print "* Magisk detected! Patching cmdline so reflashing Magisk is not necessary...";
   patch_cmdline "skip_override" "skip_override";
+  chmod +x $TMPDIR/overlay/*.sh
+  ui_print " "; ui_print "* Moving, $TMPDIR/overlay/init.nebula.rc,";
+  ui_print " "; ui_print "* Moving, $TMPDIR/overlay $ramdisk.";
+  mv $TMPDIR/overlay/init.nebula.rc $TMPDIR/overlay/init.$(getprop ro.hardware).rc
+  mv $TMPDIR/overlay $ramdisk
 else
-  ui_print " "; ui_print "Magisk NOT DETECTED: Please Install Magisk to gain full use of kernel..";
-  patch_cmdline "skip_override" "";
-fi;
+  patch_cmdline "skip_override" ""
+  ui_print '  ! Magisk is not installed; some tweaks will be missing'
+fi
 
 # detect OS edition
 userflavor="$(grep "^ro.build.user" /system/build.prop | cut -d= -f2):$(grep "^ro.build.flavor" /system/build.prop | cut -d= -f2)";
@@ -82,8 +96,63 @@ if [ "$os_string" = "a custom ROM" ]; then
    ui_print " "; ui_print "-> $os_string detected, Everything should work on Stock..";
 fi;
 
-# Clean up Other Kernels Overlays that could conflict with ours:
-rm -rf $ramdisk/overlay;
+mountpoint -q /data && {
+  # Install custom PowerHAL config
+  mkdir -p /data/adb/magisk_simple/vendor/etc
+  cp $TMPDIR/powerhint.json /data/adb/magisk_simple/vendor/etc
+
+  # Install second-stage late init script
+  mkdir -p /data/adb/service.d
+  cp $TMPDIR/95-nebula.sh /data/adb/service.d
+  chmod +x /data/adb/service.d/95-nebula.sh
+
+  # Remove old backup DTBOs
+	rm -f /data/adb/dtbo_a.orig.img /data/adb/dtbo_b.orig.img
+
+  # Optimize F2FS extension list (@arter97)
+  find /sys/fs/f2fs -name extension_list | while read list; do
+    if grep -q odex "$list"; then
+      echo "Extensions list up-to-date: $list"
+      continue
+    fi
+
+    echo "Updating extension list: $list"
+
+    echo "Clearing extension list"
+
+    HOT=$(cat $list | grep -n 'hot file extens' | cut -d : -f 1)
+    COLD=$(($(cat $list | wc -l) - $HOT))
+
+    COLDLIST=$(head -n$(($HOT - 1)) $list | grep -v ':')
+    HOTLIST=$(tail -n$COLD $list)
+
+    echo $COLDLIST | tr ' ' '\n' | while read cold; do
+      if [ ! -z $cold ]; then
+        echo "[c]!$cold" > $list
+      fi
+    done
+
+    echo $HOTLIST | tr ' ' '\n' | while read hot; do
+      if [ ! -z $hot ]; then
+        echo "[h]!$hot" > $list
+      fi
+    done
+
+    echo "Writing new extension list"
+
+    cat $TMPDIR/f2fs-cold.list | grep -v '#' | while read cold; do
+      if [ ! -z $cold ]; then
+        echo "[c]$cold" > $list
+      fi
+    done
+
+    cat $TMPDIR/f2fs-hot.list | while read hot; do
+      if [ ! -z $hot ]; then
+        echo "[h]$hot" > $list
+      fi
+    done
+  done
+} || ui_print '  ! Data is not mounted; some tweaks will be missing'
 
 # begin ramdisk changes
 # end ramdisk changes

@@ -2,10 +2,10 @@
 # osm0sis @ xda-developers
 
 # set up extracted files and directories
-ramdisk=/tmp/anykernel/ramdisk;
-bin=/tmp/anykernel/tools;
-split_img=/tmp/anykernel/split_img;
-patch=/tmp/anykernel/patch;
+ramdisk=$TMPDIR/ramdisk;
+bin=$TMPDIR/tools;
+split_img=$TMPDIR/split_img;
+patch=$TMPDIR/patch;
 
 chmod -R 755 $bin;
 mkdir -p $split_img;
@@ -25,12 +25,12 @@ file_getprop() { grep "^$2=" "$1" | cut -d= -f2-; }
 # reset anykernel directory
 reset_ak() {
   local i;
-  rm -rf $(dirname /tmp/anykernel/*-files/current)/ramdisk;
-  for i in $ramdisk $split_img /tmp/anykernel/rdtmp /tmp/anykernel/boot.img /tmp/anykernel/*-new*; do
-    cp -af $i $(dirname /tmp/anykernel/*-files/current);
+  rm -rf $(dirname $TMPDIR/*-files/current)/ramdisk;
+  for i in $ramdisk $split_img $TMPDIR/rdtmp $TMPDIR/boot.img $TMPDIR/*-new*; do
+    cp -af $i $(dirname $TMPDIR/*-files/current);
   done;
-  rm -rf $ramdisk $split_img $patch /tmp/anykernel/rdtmp /tmp/anykernel/boot.img /tmp/anykernel/*-new* /tmp/anykernel/*-files/current;
-  . /tmp/anykernel/tools/ak2-core.sh $FD;
+  rm -rf $ramdisk $split_img $patch $TMPDIR/rdtmp $TMPDIR/boot.img $TMPDIR/*-new* $TMPDIR/*-files/current;
+  . $TMPDIR/tools/ak2-core.sh $FD;
 }
 
 # dump boot and extract ramdisk
@@ -46,36 +46,36 @@ split_boot() {
     local customdd="bs=1048576";
   fi;
   if [ -f "$bin/nanddump" ]; then
-    $bin/nanddump -f /tmp/anykernel/boot.img $block;
+    $bin/nanddump -f $TMPDIR/boot.img $block;
   else
-    dd if=$block of=/tmp/anykernel/boot.img $customdd;
+    dd if=$block of=$TMPDIR/boot.img $customdd;
   fi;
-  nooktest=$(strings /tmp/anykernel/boot.img | grep -E 'Red Loader|Green Loader|Green Recovery|eMMC boot.img|eMMC recovery.img|BauwksBoot');
+  nooktest=$(strings $TMPDIR/boot.img | grep -E 'Red Loader|Green Loader|Green Recovery|eMMC boot.img|eMMC recovery.img|BauwksBoot');
   if [ "$nooktest" ]; then
     case $nooktest in
       *BauwksBoot*) nookoff=262144;;
       *) nookoff=1048576;;
     esac;
-    mv -f /tmp/anykernel/boot.img /tmp/anykernel/boot-orig.img;
-    dd bs=$nookoff count=1 conv=notrunc if=/tmp/anykernel/boot-orig.img of=$split_img/boot.img-master_boot.key;
-    dd bs=$nookoff skip=1 conv=notrunc if=/tmp/anykernel/boot-orig.img of=/tmp/anykernel/boot.img;
+    mv -f $TMPDIR/boot.img $TMPDIR/boot-orig.img;
+    dd bs=$nookoff count=1 conv=notrunc if=$TMPDIR/boot-orig.img of=$split_img/boot.img-master_boot.key;
+    dd bs=$nookoff skip=1 conv=notrunc if=$TMPDIR/boot-orig.img of=$TMPDIR/boot.img;
   fi;
-  if [ -f "$bin/unpackelf" -a "$($bin/unpackelf -i /tmp/anykernel/boot.img -h -q 2>/dev/null; echo $?)" == 0 ]; then
+  if [ -f "$bin/unpackelf" -a "$($bin/unpackelf -i $TMPDIR/boot.img -h -q 2>/dev/null; echo $?)" == 0 ]; then
     if [ -f "$bin/elftool" ]; then
       mkdir $split_img/elftool_out;
-      $bin/elftool unpack -i /tmp/anykernel/boot.img -o $split_img/elftool_out;
+      $bin/elftool unpack -i $TMPDIR/boot.img -o $split_img/elftool_out;
       cp -f $split_img/elftool_out/header $split_img/boot.img-header;
     fi;
-    $bin/unpackelf -i /tmp/anykernel/boot.img -o $split_img;
+    $bin/unpackelf -i $TMPDIR/boot.img -o $split_img;
     mv -f $split_img/boot.img-ramdisk.cpio.gz $split_img/boot.img-ramdisk.gz;
   elif [ -f "$bin/dumpimage" ]; then
-    uimgsize=$(($(printf '%d\n' 0x$(hexdump -n 4 -s 12 -e '16/1 "%02x""\n"' /tmp/anykernel/boot.img)) + 64));
-    if [ "$(wc -c < /tmp/anykernel/boot.img)" != "$uimgsize" ]; then
-      mv -f /tmp/anykernel/boot.img /tmp/anykernel/boot-orig.img;
-      dd bs=$uimgsize count=1 conv=notrunc if=/tmp/anykernel/boot-orig.img of=/tmp/anykernel/boot.img;
+    uimgsize=$(($(printf '%d\n' 0x$(hexdump -n 4 -s 12 -e '16/1 "%02x""\n"' $TMPDIR/boot.img)) + 64));
+    if [ "$(wc -c < $TMPDIR/boot.img)" != "$uimgsize" ]; then
+      mv -f $TMPDIR/boot.img $TMPDIR/boot-orig.img;
+      dd bs=$uimgsize count=1 conv=notrunc if=$TMPDIR/boot-orig.img of=$TMPDIR/boot.img;
     fi;
-    $bin/dumpimage -l /tmp/anykernel/boot.img;
-    $bin/dumpimage -l /tmp/anykernel/boot.img > $split_img/boot.img-header;
+    $bin/dumpimage -l $TMPDIR/boot.img;
+    $bin/dumpimage -l $TMPDIR/boot.img > $split_img/boot.img-header;
     grep "Name:" $split_img/boot.img-header | cut -c15- > $split_img/boot.img-name;
     grep "Type:" $split_img/boot.img-header | cut -c15- | cut -d\  -f1 > $split_img/boot.img-arch;
     grep "Type:" $split_img/boot.img-header | cut -c15- | cut -d\  -f2 > $split_img/boot.img-os;
@@ -83,18 +83,18 @@ split_boot() {
     grep "Type:" $split_img/boot.img-header | cut -d\( -f2 | cut -d\) -f1 | cut -d\  -f1 | cut -d- -f1 > $split_img/boot.img-comp;
     grep "Address:" $split_img/boot.img-header | cut -c15- > $split_img/boot.img-addr;
     grep "Point:" $split_img/boot.img-header | cut -c15- > $split_img/boot.img-ep;
-    $bin/dumpimage -i /tmp/anykernel/boot.img -p 0 $split_img/boot.img-zImage;
+    $bin/dumpimage -i $TMPDIR/boot.img -p 0 $split_img/boot.img-zImage;
     test $? != 0 && dumpfail=1;
     if [ "$(cat $split_img/boot.img-type)" == "Multi" ]; then
-      $bin/dumpimage -i /tmp/anykernel/boot.img -p 1 $split_img/boot.img-ramdisk.gz;
+      $bin/dumpimage -i $TMPDIR/boot.img -p 1 $split_img/boot.img-ramdisk.gz;
     fi;
     test $? != 0 && dumpfail=1;
   elif [ -f "$bin/rkcrc" ]; then
-    dd bs=4096 skip=8 iflag=skip_bytes conv=notrunc if=/tmp/anykernel/boot.img of=$split_img/boot.img-ramdisk.gz;
+    dd bs=4096 skip=8 iflag=skip_bytes conv=notrunc if=$TMPDIR/boot.img of=$split_img/boot.img-ramdisk.gz;
   elif [ -f "$bin/pxa-unpackbootimg" ]; then
-    $bin/pxa-unpackbootimg -i /tmp/anykernel/boot.img -o $split_img;
+    $bin/pxa-unpackbootimg -i $TMPDIR/boot.img -o $split_img;
   else
-    $bin/unpackbootimg -i /tmp/anykernel/boot.img -o $split_img;
+    $bin/unpackbootimg -i $TMPDIR/boot.img -o $split_img;
   fi;
   if [ $? != 0 -o "$dumpfail" ]; then
     ui_print " "; ui_print "Dumping/splitting image failed. Aborting..."; exit 1;
@@ -115,7 +115,7 @@ unpack_ramdisk() {
     dd bs=512 skip=1 conv=notrunc if=$split_img/boot.img-ramdisk.gz of=$split_img/temprd;
     mv -f $split_img/temprd $split_img/boot.img-ramdisk.gz;
   fi;
-  mv -f $ramdisk /tmp/anykernel/rdtmp;
+  mv -f $ramdisk $TMPDIR/rdtmp;
   case $(od -ta -An -N4 $split_img/boot.img-ramdisk.gz) in
     '  us  vt'*|'  us  rs'*) compext="gz"; unpackcmd="gzip";;
     '  ht   L   Z   O') compext="lzo"; unpackcmd="lzop";;
@@ -140,7 +140,7 @@ unpack_ramdisk() {
   if [ $? != 0 -o -z "$(ls $ramdisk)" ]; then
     ui_print " "; ui_print "Unpacking ramdisk failed. Aborting..."; exit 1;
   fi;
-  test ! -z "$(ls /tmp/anykernel/rdtmp)" && cp -af /tmp/anykernel/rdtmp/* $ramdisk;
+  test ! -z "$(ls $TMPDIR/rdtmp)" && cp -af $TMPDIR/rdtmp/* $ramdisk;
 }
 dump_boot() {
   split_boot;
@@ -170,15 +170,15 @@ repack_ramdisk() {
     repackcmd="$repackcmd -9c";
   fi;
   if [ -f "$bin/mkbootfs" ]; then
-    $bin/mkbootfs $ramdisk | $repackcmd > /tmp/anykernel/ramdisk-new.cpio$compext;
+    $bin/mkbootfs $ramdisk | $repackcmd > $TMPDIR/ramdisk-new.cpio$compext;
   else
     cd $ramdisk;
-    find . | cpio -H newc -o | $repackcmd > /tmp/anykernel/ramdisk-new.cpio$compext;
+    find . | cpio -H newc -o | $repackcmd > $TMPDIR/ramdisk-new.cpio$compext;
   fi;
   if [ $? != 0 ]; then
     ui_print " "; ui_print "Repacking ramdisk failed. Aborting..."; exit 1;
   fi;
-  cd /tmp/anykernel;
+  cd $TMPDIR;
   if [ -f "$bin/mkmtkhdr" ]; then
     $bin/mkmtkhdr --rootfs ramdisk-new.cpio$compext;
     mv -f ramdisk-new.cpio$compext-mtk ramdisk-new.cpio$compext;
@@ -186,7 +186,7 @@ repack_ramdisk() {
 }
 flash_dtbo() {
   for i in dtbo dtbo.img; do
-    if [ -f /tmp/anykernel/$i ]; then
+    if [ -f $TMPDIR/$i ]; then
       dtbo=$i;
       break;
     fi;
@@ -198,9 +198,9 @@ flash_dtbo() {
     fi;
     if [ -f "$bin/flash_erase" -a -f "$bin/nandwrite" ]; then
       $bin/flash_erase $dtbo_block 0 0;
-      $bin/nandwrite -p $dtbo_block /tmp/anykernel/$dtbo;
+      $bin/nandwrite -p $dtbo_block $TMPDIR/$dtbo;
     else
-      cat /tmp/anykernel/$dtbo /dev/zero > $dtbo_block 2>/dev/null;
+      cat $TMPDIR/$dtbo /dev/zero > $dtbo_block 2>/dev/null;
     fi;
   fi;
 }
@@ -260,8 +260,8 @@ flash_boot() {
     fi;
   fi;
   for i in zImage zImage-dtb Image.gz Image Image-dtb Image.gz-dtb Image.bz2 Image.bz2-dtb Image.lzo Image.lzo-dtb Image.lzma Image.lzma-dtb Image.xz Image.xz-dtb Image.lz4 Image.lz4-dtb Image.fit; do
-    if [ -f /tmp/anykernel/$i ]; then
-      kernel=/tmp/anykernel/$i;
+    if [ -f $TMPDIR/$i ]; then
+      kernel=$TMPDIR/$i;
       break;
     fi;
   done;
@@ -269,16 +269,16 @@ flash_boot() {
     kernel=`ls *-zImage`;
     kernel=$split_img/$kernel;
   fi;
-  if [ -f /tmp/anykernel/ramdisk-new.cpio* ]; then
-    rd=`echo /tmp/anykernel/ramdisk-new.cpio*`;
+  if [ -f $TMPDIR/ramdisk-new.cpio* ]; then
+    rd=`echo $TMPDIR/ramdisk-new.cpio*`;
   else
     rd=`ls *-ramdisk.*`;
     rd="$split_img/$rd";
   fi;
   for i in dtb dt.img; do
-    if [ -f /tmp/anykernel/$i ]; then
-      dtb="--dt /tmp/anykernel/$i";
-      rpm="/tmp/anykernel/$i,rpm";
+    if [ -f $TMPDIR/$i ]; then
+      dtb="--dt $TMPDIR/$i";
+      rpm="$TMPDIR/$i,rpm";
       break;
     fi;
   done;
@@ -287,7 +287,7 @@ flash_boot() {
     rpm="$split_img/$dtb,rpm";
     dtb="--dt $split_img/$dtb";
   fi;
-  cd /tmp/anykernel;
+  cd $TMPDIR;
   if [ -f "$bin/mkmtkhdr" ]; then
     case $kernel in
       $split_img/*) ;;
@@ -338,12 +338,12 @@ flash_boot() {
     mv -f boot-new-signed.img boot-new.img;
   fi;
   if [ -f "/data/custom_boot_image_patch.sh" ]; then
-    ash /data/custom_boot_image_patch.sh /tmp/anykernel/boot-new.img;
+    ash /data/custom_boot_image_patch.sh $TMPDIR/boot-new.img;
     if [ $? != 0 ]; then
       ui_print " "; ui_print "User script execution failed. Aborting..."; exit 1;
     fi;
   fi;
-  if [ "$(strings /tmp/anykernel/boot.img | grep SEANDROIDENFORCE )" ]; then
+  if [ "$(strings $TMPDIR/boot.img | grep SEANDROIDENFORCE )" ]; then
     printf 'SEANDROIDENFORCE' >> boot-new.img;
   fi;
   if [ -f "$bin/dhtbsign" ]; then
@@ -354,19 +354,19 @@ flash_boot() {
     cat $split_img/boot.img-master_boot.key boot-new.img > boot-new-signed.img;
     mv -f boot-new-signed.img boot-new.img;
   fi;
-  if [ ! -f /tmp/anykernel/boot-new.img ]; then
+  if [ ! -f $TMPDIR/boot-new.img ]; then
     ui_print " "; ui_print "Repacked image could not be found. Aborting..."; exit 1;
   elif [ "$(wc -c < boot-new.img)" -gt "$(wc -c < boot.img)" ]; then
     ui_print " "; ui_print "New image larger than boot partition. Aborting..."; exit 1;
   fi;
   if [ -f "$bin/flash_erase" -a -f "$bin/nandwrite" ]; then
     $bin/flash_erase $block 0 0;
-    $bin/nandwrite -p $block /tmp/anykernel/boot-new.img;
+    $bin/nandwrite -p $block $TMPDIR/boot-new.img;
   elif [ "$customdd" ]; then
     dd if=/dev/zero of=$block $customdd 2>/dev/null;
-    dd if=/tmp/anykernel/boot-new.img of=$block $customdd;
+    dd if=$TMPDIR/boot-new.img of=$block $customdd;
   else
-    cat /tmp/anykernel/boot-new.img /dev/zero > $block 2>/dev/null;
+    cat $TMPDIR/boot-new.img /dev/zero > $block 2>/dev/null;
   fi;
 }
 write_boot() {
@@ -560,11 +560,11 @@ patch_ueventd() {
 # allow multi-partition ramdisk modifying configurations (using reset_ak)
 if [ ! -d "$ramdisk" -a ! -d "$patch" ]; then
   if [ -d "$(basename $block)-files" ]; then
-    cp -af /tmp/anykernel/$(basename $block)-files/* /tmp/anykernel;
+    cp -af $TMPDIR/$(basename $block)-files/* $TMPDIR;
   else
-    mkdir -p /tmp/anykernel/$(basename $block)-files;
+    mkdir -p $TMPDIR/$(basename $block)-files;
   fi;
-  touch /tmp/anykernel/$(basename $block)-files/current;
+  touch $TMPDIR/$(basename $block)-files/current;
 fi;
 test ! -d "$ramdisk" && mkdir -p $ramdisk;
 

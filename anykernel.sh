@@ -28,7 +28,7 @@ ramdisk_compression=auto;
 
 ## AnyKernel methods (DO NOT CHANGE)
 # import patching functions/variables - see for reference
-. /tmp/anykernel/tools/ak2-core.sh;
+. $TMPDIR/tools/ak2-core.sh;
 
 file_getprop() { $bb grep "^$2=" "$1" | $bb cut -d= -f2-; }
 
@@ -56,10 +56,10 @@ if [ -d $ramdisk/.subackup -o -d $ramdisk/.backup ]; then
   patch_cmdline "skip_override" "skip_override";
 
    if [ "$(file_getprop anykernel.sh do.init)" == 1 ]; then
-       chmod +x /tmp/anykernel/overlay/*.sh
+       chmod +x $TMPDIR/overlay/*.sh
        ui_print " "; ui_print "* Copying Initial Scripts to ramdisk.";
-       mv /tmp/anykernel/overlay/init.nebula.rc /tmp/anykernel/overlay/init.$(getprop ro.hardware).rc
-       mv /tmp/anykernel/overlay $ramdisk/overlay
+       mv $TMPDIR/overlay/init.nebula.rc $TMPDIR/overlay/init.$(getprop ro.hardware).rc
+       mv $TMPDIR/overlay $ramdisk/overlay
    fi
 else
   patch_cmdline "skip_override" ""
@@ -100,7 +100,7 @@ mountpoint -q /data && {
   # Install custom PowerHAL config
   ui_print " "; ui_print "-> Installing PowerHALL Config.";
   mkdir -p /data/adb/magisk_simple/vendor/etc
-  cp /tmp/anykernel/powerhint.json /data/adb/magisk_simple/vendor/etc
+  cp $TMPDIR/powerhint.json /data/adb/magisk_simple/vendor/etc
   fi
   
   rm -rf /data/adb/service.d
@@ -108,7 +108,7 @@ mountpoint -q /data && {
   # Install second-stage late init script
   ui_print " "; ui_print "-> Installing Second-Stage late init Script..";
   mkdir -p /data/adb/service.d
-  cp /tmp/anykernel/95-nebula.sh /data/adb/service.d
+  cp $TMPDIR/95-nebula.sh /data/adb/service.d
   chmod +x /data/adb/service.d/95-nebula.sh
   fi
 
@@ -146,13 +146,13 @@ mountpoint -q /data && {
 
     echo "Writing new extension list"
 
-    cat /tmp/anykernel/f2fs-cold.list | grep -v '#' | while read cold; do
+    cat $TMPDIR/f2fs-cold.list | grep -v '#' | while read cold; do
       if [ ! -z $cold ]; then
         echo "[c]$cold" > $list
       fi
     done
 
-    cat /tmp/anykernel/f2fs-hot.list | while read hot; do
+    cat $TMPDIR/f2fs-hot.list | while read hot; do
       if [ ! -z $hot ]; then
         echo "[h]$hot" > $list
       fi

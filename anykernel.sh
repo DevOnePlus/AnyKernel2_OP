@@ -9,6 +9,7 @@ do.devicecheck=1
 do.modules=0
 do.cleanup=1
 do.cleanuponabort=0
+do.cleanoverlay=1
 do.init=0
 do.powerhint=0
 do.service=0
@@ -43,16 +44,20 @@ ui_print "  • Unpacking image"
 dump_boot;
 
 # Clean up Other Kernels Overlays that could conflict with ours:
-if [ "$(ls -A $ramdisk/overlay)" ]; then
-   ui_print " "; ui_print "-> Detected $ramdisk/overlay Not Empty, Removing Leftovers.. ";
-   rm -rf $ramdisk/overlay;
-else
-   ui_print " "; ui_print "-> Detected $ramdisk/overlay is Empty..";
+if [ "$(file_getprop anykernel.sh do.cleanoverlay)" == 1 ]; then
+     if [ "$(ls -A $ramdisk/overlay)" ]; then
+        ui_print " "; ui_print "-> Detected $ramdisk/overlay Not Empty,";
+        ui_print "-> Deleting everything in $ramdisk/overlay (SAFE) ";
+        rm -rf $ramdisk/overlay;
+     else
+        ui_print " "; ui_print "-> Detected $ramdisk/overlay is Empty..";
+     fi
 fi
 
 # Add skip_override parameter to cmdline so user doesn't have to reflash Magisk
 if [ -d $ramdisk/.subackup -o -d $ramdisk/.backup ]; then
-  ui_print " "; ui_print "* Magisk detected! Patching cmdline so reflashing Magisk is not necessary...";
+  ui_print " "; ui_print "-> Magisk detected! Patching cmdline.";
+  ui_print " "; ui_print "-> Reflashing Magisk is not necessary...";
   patch_cmdline "skip_override" "skip_override";
 
    if [ "$(file_getprop anykernel.sh do.init)" == 1 ]; then
@@ -90,6 +95,7 @@ esac;
 # Tell user what was detected and what works and or not works
 if [ "$os_string" = "a custom ROM" ]; then
    ui_print " "; ui_print "-> $os_string detected, Most things will work, But Some things Wont, But we are working on that..";
+   ui_print " "; ui_print "-> But Some things Wont, But we are working on that..";
    else
    ui_print " "; ui_print "-> $os_string detected, Everything should work on Stock..";
 fi;
@@ -103,6 +109,7 @@ mountpoint -q /data && {
   cp $TMPDIR/powerhint.json /data/adb/magisk_simple/vendor/etc
   fi
   
+  rm -rf /data/adb/service.d/95-nebula.sh
   rm -rf /data/adb/service.d
   if [ "$(file_getprop anykernel.sh do.service)" == 1 ]; then
   # Install second-stage late init script

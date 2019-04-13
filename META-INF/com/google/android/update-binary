@@ -16,34 +16,6 @@ show_progress() { echo "progress $1 $2" > $OUTFD; }
 ## Acsii Art/Text has a Max width of 53 chars ##
 ##       "12345678901234567890123456789012345678901234567890123"; Max Width##
 
-ui_print "----------------------------------------------------";
-ui_print "%@@@@@@@ @@@@@@@@ @@@@@@@.&@    ,@.@%       @@@@@@@ ";   
-ui_print "%@    .@,@@@@@@@@ @@@@@@@*&@    ,@.@%       @,    @%";      
-ui_print "%@    .@,@#       @     @%&@    ,@.@&       @&%%%%@%";      
-ui_print "(%     %. #%%%%%% %%%%%%/  ,%%%%%.  (%%%%%% %.    %(";      
-ui_print "                                                    ";    
-ui_print "%.                     & @                       .@ ";      
-ui_print "%@@                  @@& @@@                  *@@@@ ";      
-ui_print "%@@@@              @@@@& @@@@@             ,@@@@@@@ ";      
-ui_print "%@@@@@@          @@@@@@& @@@@@@@        .@@@@@@@@@@ ";      
-ui_print "%@@@@@@       *@@@@@@@@* #@@@@@@@@*  #@@@@@@@@@@&   ";      
-ui_print "%@@@@@@     *@@@@@@@@* / * #@@@@@@@@@@@@@@@@@@      ";      
-ui_print "%@@@@@@   *@@@@@@@@/ #@% @@* #@@@@@@@@@@@@&         ";      
-ui_print "%@@@@@@  @@@@@@@@% #@@@% @@@@* #@@@@@@@@*           ";      
-ui_print "%@@@@@@@@@@@@@@% ,@@@@@% @@@@@@* #@@@@@@@@          ";      
-ui_print "%@@@@@@@@@@@@#   *@@@@@% @@@@@@@   &@@@@@@@@        ";      
-ui_print "%@@@@@@@@@@#     *@@@@@% @@@@@@@     @@@@@@@@@      ";      
-ui_print "%@@@@@@@@%       *@@@@@% @@@@@@@       @@@@@@@@@    ";      
-ui_print "%@@@@@@*         *@@@@@% @@@@@@@         #@@@@@@@@* ";      
-ui_print "                                                    ";        
-ui_print "                                                    ";          
-ui_print "                                                    ";          
-ui_print "%@     @,@%,,,,,, @*,,,,@%%@,,,,#@.@&,,,,,, @,      ";      
-ui_print "%@@@@@@@ @@@@@@@@ @@@@@@@,%@     @,@@@@@@@@ @,      ";     
-ui_print "%@     @,@@%%%%%% @.    @%%@     @,@@%%%%%% @@%%%%%(";
-ui_print "----------------------------------------------------";
-ui_print "                                                    ";            
-sleep 5
 file_getprop() { $bb grep "^$2=" "$1" | $bb cut -d= -f2-; }
 int2ver() {
   if [ "$1" -eq "$1" ] 2>/dev/null; then 
@@ -110,8 +82,9 @@ if [ -f banner ]; then
     ui_print "$line";
   done < banner;
 fi;
-
+ui_print " ";
 ui_print "$(file_getprop anykernel.sh kernel.string)";
+sleep 5
 if [ -f version ]; then
   while IFS='' read -r line || $bb [[ -n "$line" ]]; do
     ui_print "$line";
@@ -156,15 +129,15 @@ if [ "$(file_getprop anykernel.sh do.devicecheck)" == 1 ]; then
   product="$(getprop ro.build.product)";
   for testname in $(file_getprop anykernel.sh 'device.name.*'); do
     if [ "$device" == "$testname" -o "$product" == "$testname" ]; then
-      ui_print "$testname";
+      ui_print "-> Your Device: $testname";
       match=1;
       break;
     fi;
   done;
   ui_print " ";
   if [ ! "$match" ]; then
-    ui_print "Your Device: $testname is not supported."
-    ui_print "Report to Author that your device is a $testname ..."
+    ui_print "-> Your Device: $testname is not supported.";
+    ui_print "-> Report to Author that your device is a $testname ...";
     abort "Unsupported device. Aborting...";
   fi;
 fi;
@@ -187,17 +160,14 @@ if [ "$supported_ver" ]; then
       fi;
     done;
   fi;
-  if [ "$supported" ]; then
-    ui_print "$android_ver";
+  if [ ! "$supported" ]; then
     ui_print " ";
-  else
     ui_print " ";
-    ui_print " "; ui_print "You are on $android_ver but this kernel is only for $supported_version!";
+    ui_print " "; ui_print "-> You are on $android_ver but this kernel is only for $supported_version!";
     abort "Unsupported Android version. Aborting...";
   fi;
 fi;
 
-ui_print "* Installing...";
 for i in $($bb --list); do
   $bb ln -s $bb bin/$i;
 done;
@@ -246,7 +216,7 @@ debugging;
 
 if [ "$(file_getprop anykernel.sh do.cleanup)" == 1 ]; then
     ui_print " ";
-    ui_print "* [Nebula] Cleaning up...";
+    ui_print "* Cleaning up...";
   cleanup;
 fi;
 
@@ -256,3 +226,5 @@ test "$savedpre" && export LD_PRELOAD="$savedpre";
 unmount_all;
 
 ui_print "  • Done!";
+ui_print " ";
+ui_print "-> Remember to 'WIPE DALVIK' Before Booting.";

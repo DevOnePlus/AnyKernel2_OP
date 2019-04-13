@@ -215,16 +215,25 @@ fi;
 debugging;
 
 if [ "$(file_getprop anykernel.sh do.cleanup)" == 1 ]; then
-    ui_print " ";
-    ui_print "* Cleaning up...";
   cleanup;
 fi;
 
 test "$savedpath" && export LD_LIBRARY_PATH="$savedpath";
 test "$savedpre" && export LD_PRELOAD="$savedpre";
 
+## Auto Wipe dalvikcache options ##
+if [ "$(file_getprop anykernel.sh do.wipedalvik)" == 1 ]; then
+	ui_print " "; ui_print "-> Auto Wiping dalvik-cache,";
+    	ui_print " ";
+    	rm -rf /data/dalvik-cache
+fi;
+
+if [ "$(file_getprop anykernel.sh do.wipecache)" == 1 ]; then
+	ui_print " "; ui_print "-> Auto Wiping cache,";
+    	ui_print " ";
+    	rm -rf /data/cache
+fi;
+
 unmount_all;
 
-ui_print "  • Done!";
-ui_print " ";
-ui_print "-> Remember to 'WIPE DALVIK' Before Booting.";
+ui_print "  • Its Finished! Press Reboot!";

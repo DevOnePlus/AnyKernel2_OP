@@ -31,11 +31,11 @@ case "$1" in
 	'battery')
 		# CPU: Little
 		little_min 300000
-		little_max 1516800
+		little_max 1612800
 		little_boost 748800
 		little_gov_param hispeed_freq 0
 		# CPU: Big
-		big_max 1209600
+		big_max 2764800
 		big_boost 0
 		big_gov_param hispeed_freq 0
 		# CPU: Governor
@@ -59,7 +59,7 @@ case "$1" in
 		little_boost 1056000
 		little_gov_param hispeed_freq 0
 		# CPU: Big
-		big_max 2323200
+		big_max 2649600
 		big_boost 902400
 		big_gov_param hispeed_freq 0
 		# CPU: Governor

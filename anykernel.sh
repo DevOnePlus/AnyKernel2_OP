@@ -9,6 +9,9 @@ do.devicecheck=1
 do.modules=0
 do.cleanup=1
 do.cleanuponabort=0
+do.init=0
+do.powerhint=0
+do.service=0
 device.name1=OnePlus6
 device.name2=OnePlus6T
 device.name3=OnePlus6TSingle
@@ -26,6 +29,8 @@ ramdisk_compression=auto;
 ## AnyKernel methods (DO NOT CHANGE)
 # import patching functions/variables - see for reference
 . /tmp/anykernel/tools/ak2-core.sh;
+
+file_getprop() { $bb grep "^$2=" "$1" | $bb cut -d= -f2-; }
 
 ## AnyKernel file attributes
 # set permissions/ownership for included ramdisk files
@@ -49,10 +54,13 @@ fi
 if [ -d $ramdisk/.subackup -o -d $ramdisk/.backup ]; then
   ui_print " "; ui_print "* Magisk detected! Patching cmdline so reflashing Magisk is not necessary...";
   patch_cmdline "skip_override" "skip_override";
-  chmod +x /tmp/anykernel/overlay/*.sh
-  ui_print " "; ui_print "* Copying Initial Scripts to ramdisk.";
-  mv /tmp/anykernel/overlay/init.nebula.rc /tmp/anykernel/overlay/init.$(getprop ro.hardware).rc
-  mv /tmp/anykernel/overlay $ramdisk/overlay
+
+   if [ "$(file_getprop anykernel.sh do.init)" == 1 ]; then
+       chmod +x /tmp/anykernel/overlay/*.sh
+       ui_print " "; ui_print "* Copying Initial Scripts to ramdisk.";
+       mv /tmp/anykernel/overlay/init.nebula.rc /tmp/anykernel/overlay/init.$(getprop ro.hardware).rc
+       mv /tmp/anykernel/overlay $ramdisk/overlay
+   fi
 else
   patch_cmdline "skip_override" ""
   ui_print '  ! Magisk is not installed; some tweaks will be missing'
@@ -87,14 +95,22 @@ if [ "$os_string" = "a custom ROM" ]; then
 fi;
 
 mountpoint -q /data && {
+  rm -rf /data/adb/magisk_simple
+  if [ "$(file_getprop anykernel.sh do.powerhint)" == 1 ]; then
   # Install custom PowerHAL config
+  ui_print " "; ui_print "-> Installing PowerHALL Config.";
   mkdir -p /data/adb/magisk_simple/vendor/etc
   cp /tmp/anykernel/powerhint.json /data/adb/magisk_simple/vendor/etc
-
+  fi
+  
+  rm -rf /data/adb/service.d
+  if [ "$(file_getprop anykernel.sh do.service)" == 1 ]; then
   # Install second-stage late init script
+  ui_print " "; ui_print "-> Installing Second-Stage late init Script..";
   mkdir -p /data/adb/service.d
   cp /tmp/anykernel/95-nebula.sh /data/adb/service.d
   chmod +x /data/adb/service.d/95-nebula.sh
+  fi
 
   # Remove old backup DTBOs
 	rm -f /data/adb/dtbo_a.orig.img /data/adb/dtbo_b.orig.img

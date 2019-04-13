@@ -210,6 +210,7 @@ flash_dtbo() {
   fi;
 }
 flash_boot() {
+  ui_print "  • Repacking image"
   local name arch os type comp addr ep cmdline cmd board base pagesize kerneloff ramdiskoff tagsoff osver oslvl second secondoff hash unknown i kernel rd dtb rpm pk8 cert avbtype dtbo dtbo_block;
   cd $split_img;
   if [ -f "$bin/mkimage" ]; then
@@ -364,6 +365,8 @@ flash_boot() {
   elif [ "$(wc -c < boot-new.img)" -gt "$(wc -c < boot.img)" ]; then
     ui_print " "; ui_print "New image larger than boot partition. Aborting..."; exit 1;
   fi;
+
+  ui_print "  • Flashing new image"
   if [ -f "$bin/flash_erase" -a -f "$bin/nandwrite" ]; then
     $bin/flash_erase $block 0 0;
     $bin/nandwrite -p $block $TMPDIR/boot-new.img;
@@ -375,6 +378,7 @@ flash_boot() {
   fi;
 }
 write_boot() {
+  ui_print "  • Repacking ramdisk"
   repack_ramdisk;
   flash_boot;
   flash_dtbo;

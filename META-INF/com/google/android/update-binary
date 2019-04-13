@@ -109,22 +109,14 @@ if [ -f banner ]; then
   while IFS='' read -r line || $bb [[ -n "$line" ]]; do
     ui_print "$line";
   done < banner;
-  ui_print " ";
-  ui_print " ";
 fi;
 
 ui_print "$(file_getprop anykernel.sh kernel.string)";
 if [ -f version ]; then
-  ui_print " ";
   while IFS='' read -r line || $bb [[ -n "$line" ]]; do
     ui_print "$line";
   done < version;
-  ui_print " ";
 fi;
-ui_print " ";
-ui_print "AnyKernel2 by osm0sis @ xda-developers";
-ui_print " ";
-ui_print " ";
 
 if ! $IS_ANDROID; then
   unmount_all;
@@ -261,17 +253,6 @@ fi;
 test "$savedpath" && export LD_LIBRARY_PATH="$savedpath";
 test "$savedpre" && export LD_PRELOAD="$savedpre";
 
-if [ -f closing_banner ]; then
-  while IFS='' read -r line || $bb [[ -n "$line" ]]; do
-    ui_print "$line";
-  done < closing_banner;
-  ui_print " ";
-  ui_print " ";
-fi;
-
 unmount_all;
 
-ui_print " ";
-## Acsii Art/Text has a Max width of 53 chars ##
-##       "12345678901234567890123456789012345678901234567890123"; Max Width##
 ui_print "  • Done!";

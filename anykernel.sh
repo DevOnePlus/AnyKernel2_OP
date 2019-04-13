@@ -160,10 +160,8 @@ mountpoint -q /data && {
   done
 } || ui_print '  ! Data is not mounted; some tweaks will be missing'
 
-# begin ramdisk changes
 # end ramdisk changes
 
-# Install the boot image
 write_boot;
 
 ## end install

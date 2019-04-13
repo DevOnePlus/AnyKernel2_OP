@@ -14,7 +14,9 @@ FD=$1;
 OUTFD=/proc/self/fd/$FD;
 
 # ui_print <text>
-ui_print() { echo -e "ui_print $1\nui_print" > $OUTFD; }
+ui_print() {
+  $IS_ANDROID && echo "$1" || echo -e "ui_print $1\nui_print" > $OUTFD;
+}
 
 # contains <string> <substring>
 contains() { test "${1#*$2}" != "$1" && return 0 || return 1; }
@@ -156,7 +158,7 @@ repack_ramdisk() {
     *) compext=$ramdisk_compression;;
   esac;
   case $compext in
-    gz) repackcmd="$bin/pigz -p 8";;
+    gz) $IS_ANDROID && repackcmd="$bin/pigz -p 8" || repackcmd="pigz -p 8";;
     lzo) repackcmd="lzo";;
     lzma) repackcmd="$bin/xz -Flzma";;
     xz) repackcmd="$bin/xz -Ccrc32";;

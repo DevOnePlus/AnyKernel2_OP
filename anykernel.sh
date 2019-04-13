@@ -15,8 +15,8 @@ do.service=0
 device.name1=OnePlus6
 device.name2=OnePlus6T
 device.name3=OnePlus6TSingle
-device.name4=
-device.name5=
+device.name4=enchilada
+device.name5=fajita
 supported.versions=9
 '; } # end properties
 
